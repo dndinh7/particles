@@ -16,6 +16,7 @@ struct Particle {
   glm::vec4 color;
   float rot;
   float size;
+  bool isDead;
 };
 
 class Viewer : public Window {
@@ -25,7 +26,7 @@ public:
 
   void setup() {
     setWindowSize(1000, 1000);
-    createConfetti(500);
+    createConfetti(1);
     renderer.setDepthTest(false);
     renderer.blendMode(agl::ADD);
   }
@@ -41,12 +42,33 @@ public:
       particle.rot = 0.0;
       particle.pos = agl::randomUnitCube();
       particle.vel = agl::randomUnitCube();
+      particle.isDead= true;
       mParticles.push_back(particle);
     }
   }
 
-  void updateConfetti()
+  void updateConfetti(float dt)
   {
+    for (int i= 0; i < mParticles.size(); i++) {
+      Particle particle= mParticles[i];
+      if (particle.isDead) { // reset
+        particle.color = vec4(1, 0, 0, 1);
+        particle.size = 0.25;
+        particle.rot = 0.0;
+        particle.pos = position;
+        particle.isDead= false;
+        particle.vel = vec3(dt, dt, 0);
+
+      } else { // update
+        particle.color.w-= 0.1 * dt;
+        particle.size+= 0.1 * dt;
+        particle.pos-= particle.vel;
+
+        if (particle.color.w < 0.3f) particle.isDead= true;
+      }
+
+      mParticles[i]= particle;
+    }
   }
 
   void drawConfetti()
@@ -82,8 +104,9 @@ public:
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);
 
     renderer.lookAt(eyePos, lookPos, up);
+    position= vec3(cos(elapsedTime()), sin(elapsedTime()), 0);
     renderer.sprite(position, vec4(1.0f), 0.25f);
-    updateConfetti();
+    updateConfetti(dt());
     drawConfetti();
     renderer.endShader();
   }

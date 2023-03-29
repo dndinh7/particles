@@ -1,6 +1,12 @@
 // Bryn Mawr College, alinen, 2020
 //
 
+/**
+ * This program renders a billboard explosion
+ * using sprites and corresponding uv coordinate
+ * mapping.
+*/
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -25,6 +31,7 @@ public:
       "../textures/explosion2.png", 0);
     renderer.setDepthTest(false);
     renderer.blendMode(agl::ADD);
+
   }
 
 
@@ -46,10 +53,13 @@ public:
     renderer.texture("image", "explosion");
 
     // 30 fps => each frame 1/30 long, e.g. when time = 1s, we play frame 30
-    frame = 0;
-    renderer.setUniform("Frame", frame);
-    renderer.setUniform("Rows", numRows);
-    renderer.setUniform("Cols", numCols);
+    frame = frame + dt() * 30;
+    int f= int(frame) % numFrames;
+    int row= numRows - (f / numRows);
+    int col= f % numCols;
+    renderer.setUniform("Frame", f);
+    renderer.setUniform("Rows", row);
+    renderer.setUniform("Cols", col);
 
     float aspect = ((float)width()) / height();
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);
@@ -65,9 +75,10 @@ protected:
   vec3 eyePos = vec3(0, 0, 2);
   vec3 lookPos = vec3(0, 0, 0);
   vec3 up = vec3(0, 1, 0);
-  int frame = 0;
+  float frame = 0;
   int numRows = 8;
   int numCols = 8;
+  int numFrames= 64;
 };
 
 int main(int argc, char** argv)
