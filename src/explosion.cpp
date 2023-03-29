@@ -4,7 +4,10 @@
 /**
  * This program renders a billboard explosion
  * using sprites and corresponding uv coordinate
- * mapping.
+ * mapping. The animation is rendered at 30fps and
+ * will continually loop.
+ * 
+ * Author: David Dinh
 */
 
 #include <cmath>
