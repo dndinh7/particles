@@ -41,7 +41,7 @@ public:
       particle.size = 0.25;
       particle.rot = 0.0;
       particle.pos = agl::randomUnitCube();
-      particle.vel = agl::randomUnitCube();
+      particle.vel = velocity;
       particle.isDead= true;
       mParticles.push_back(particle);
     }
@@ -52,17 +52,17 @@ public:
     for (int i= 0; i < mParticles.size(); i++) {
       Particle particle= mParticles[i];
       if (particle.isDead) { // reset
-        particle.color = vec4(1, 0, 0, 1);
+        particle.color = vec4(agl::randomUnitCube(), 1);
         particle.size = 0.25;
         particle.rot = 0.0;
         particle.pos = position;
         particle.isDead= false;
-        particle.vel = vec3(dt, dt, 0);
-
+        particle.vel= velocity;
       } else { // update
-        particle.color.w-= 0.1 * dt;
+        particle.color.w-= 0.25 * dt;
+        particle.rot+= 0.5 * dt;
         particle.size+= 0.1 * dt;
-        particle.pos-= particle.vel;
+        particle.pos-= particle.vel * dt;
 
         if (particle.color.w < 0.3f) particle.isDead= true;
       }
@@ -104,7 +104,8 @@ public:
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);
 
     renderer.lookAt(eyePos, lookPos, up);
-    position= vec3(cos(elapsedTime()), sin(elapsedTime()), 0);
+    velocity= vec3(-sin(elapsedTime()), cos(elapsedTime()), 0);
+    position= position + velocity*dt();
     renderer.sprite(position, vec4(1.0f), 0.25f);
     updateConfetti(dt());
     drawConfetti();
@@ -117,6 +118,7 @@ protected:
   vec3 lookPos = vec3(0, 0, 0);
   vec3 up = vec3(0, 1, 0);
   vec3 position = vec3(1, 0, 0);
+  vec3 velocity = vec3(-sin(0), cos(0), 0);
 
   std::vector<Particle> mParticles;
 };
