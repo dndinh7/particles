@@ -26,7 +26,7 @@ public:
 
   void setup() {
     setWindowSize(1000, 1000);
-    createConfetti(1);
+    createConfetti(100);
     renderer.setDepthTest(false);
     renderer.blendMode(agl::ADD);
   }
@@ -37,34 +37,42 @@ public:
     for (int i = 0; i < size; i++)
     {
       Particle particle;
-      particle.color = vec4(agl::randomUnitCube(), 1);
+      particle.color = vec4(0, 0, 0, 0);
       particle.size = 0.25;
       particle.rot = 0.0;
-      particle.pos = agl::randomUnitCube();
       particle.vel = velocity;
-      particle.isDead= true;
+      particle.pos = position;
+      particle.isDead= false;
       mParticles.push_back(particle);
     }
   }
 
   void updateConfetti(float dt)
   {
+    bool placed= false;
+    bool died= false;
     for (int i= 0; i < mParticles.size(); i++) {
       Particle particle= mParticles[i];
-      if (particle.isDead) { // reset
+      if (particle.isDead && !placed) { // reset
         particle.color = vec4(agl::randomUnitCube(), 1);
         particle.size = 0.25;
         particle.rot = 0.0;
         particle.pos = position;
         particle.isDead= false;
-        particle.vel= velocity;
-      } else { // update
-        particle.color.w-= 0.25 * dt;
-        particle.rot+= 0.5 * dt;
+        // jitter the velocity
+        particle.vel= velocity + vec3(rand() % 10 / 10.0f, rand() % 10 / 10.0f, 0);
+      } else if (!particle.isDead) { // update
+        float scalarFactor= (rand() % 5 + 1) * 0.2f;
+
+        particle.color.w-= 0.5 * dt;
+        particle.rot+= scalarFactor * 2.0f * dt;
         particle.size+= 0.1 * dt;
         particle.pos-= particle.vel * dt;
 
-        if (particle.color.w < 0.3f) particle.isDead= true;
+        if (particle.color.w < 0.3f && !died) {
+          particle.isDead= true;
+          died= true;
+        }
       }
 
       mParticles[i]= particle;
