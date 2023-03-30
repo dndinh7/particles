@@ -58,11 +58,14 @@ public:
     // 30 fps => each frame 1/30 long, e.g. when time = 1s, we play frame 30
     frame = frame + dt() * 30;
     int f= int(frame) % numFrames;
-    int row= numRows - (f / numRows);
+    int row= numRows - (f / numCols);
     int col= f % numCols;
     renderer.setUniform("Frame", f);
-    renderer.setUniform("Rows", row);
-    renderer.setUniform("Cols", col);
+
+    renderer.setUniform("NumRows", numRows);
+    renderer.setUniform("NumCols", numCols);
+    renderer.setUniform("Row", row);
+    renderer.setUniform("Col", col);
 
     float aspect = ((float)width()) / height();
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);

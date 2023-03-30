@@ -9,8 +9,10 @@ uniform vec3 Offset;
 uniform vec4 Color;
 uniform mat4 MVP;
 uniform int Frame;
-uniform int Rows;
-uniform int Cols;
+uniform int NumRows;
+uniform int NumCols;
+uniform int Row;
+uniform int Col;
 
 out vec4 color;
 out vec2 uv;
@@ -19,8 +21,8 @@ void main()
 {
   color = Color;
   uv = vPosition.xy;
-  uv.x = (uv.x + Cols)/ 8;
-  uv.y = (uv.y + Rows)/ 8;
+  uv.x = (uv.x + Col) / NumCols;
+  uv.y = (uv.y + Row) / NumRows;
   
   vec3 z = normalize(CameraPos - Offset);
   vec3 x = normalize(cross(vec3(0,1,0), z));

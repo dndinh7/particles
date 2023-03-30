@@ -1,6 +1,13 @@
 // Bryn Mawr College, alinen, 2020
 //
 
+/**
+ * This program moves a star particle in a circle,
+ * then leaves a trail of colorful stars behind.
+ * 
+ * Author: David Dinh
+*/
+
 #include <cmath>
 #include <string>
 #include <vector>
@@ -49,8 +56,8 @@ public:
 
   void updateConfetti(float dt)
   {
-    bool placed= false;
-    bool died= false;
+    bool placed= false; // only one should be placed per frame
+    bool died= false; // only one should be recycled per frame
     for (int i= 0; i < mParticles.size(); i++) {
       Particle particle= mParticles[i];
       if (particle.isDead && !placed) { // reset
@@ -69,7 +76,7 @@ public:
         particle.size+= 0.1 * dt;
         particle.pos-= particle.vel * dt;
 
-        if (particle.color.w < 0.3f && !died) {
+        if (particle.color.w < 0.4f && !died) {
           particle.isDead= true;
           died= true;
         }

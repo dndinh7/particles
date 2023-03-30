@@ -100,7 +100,9 @@ public:
     float thetaY= atan2(n.x, n.z);
     renderer.rotate(thetaY, vec3(0, 1, 0));
 
-    renderer.translate(vec3(-0.5, -0.5, 0));
+    renderer.scale(vec3(0.60, 1, 1)); // scale the tree to not look stretched
+
+    renderer.translate(vec3(-0.5, -0.5, 0)); // translate to the middle
 
 
     renderer.quad(); // vertices span from (0,0,0) to (1,1,0)
