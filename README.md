@@ -57,7 +57,8 @@ particles/build $ ../bin/explosion
 
 ### Explosion
 
-![explosion](https://user-images.githubusercontent.com/72237791/229004782-e32a5876-7523-48a0-bc82-4181e5faf613.gif)
+![explosions](https://user-images.githubusercontent.com/72237791/229006284-f07c0072-e8a2-4f70-9899-6b7d02e8039d.gif)
+
 
 
 ### Billboard One-Axis Rotation
