@@ -49,9 +49,10 @@ particles/build $ ../bin/explosion
 
 ## Demo of basic features
 
-### Sparkles Trail
+### Star Trail
 
-![sparkle-trail](https://user-images.githubusercontent.com/72237791/229004752-2ef9bbf0-3853-434d-bb76-b5554d58a12b.gif)
+![star-trail](https://user-images.githubusercontent.com/72237791/229005716-3acdfe63-bd31-4100-ac3f-6365e650cf5d.gif)
+
 
 
 ### Explosion
