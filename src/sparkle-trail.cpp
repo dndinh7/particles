@@ -33,7 +33,7 @@ public:
 
   void setup() {
     setWindowSize(1000, 1000);
-    createConfetti(100);
+    createConfetti(150);
     renderer.setDepthTest(false);
     renderer.blendMode(agl::ADD);
   }
@@ -43,6 +43,8 @@ public:
     renderer.loadTexture("particle", "../textures/star4.png", 0);
     for (int i = 0; i < size; i++)
     {
+      // creating particle like this, so they all
+      // just don't "pop" out at the start
       Particle particle;
       particle.color = vec4(0, 0, 0, 0);
       particle.size = 0.25;
@@ -71,12 +73,14 @@ public:
       } else if (!particle.isDead) { // update
         float scalarFactor= (rand() % 5 + 1) * 0.2f;
 
-        particle.color.w-= 0.5 * dt;
+        particle.color.w-= 0.65f * dt;
         particle.rot+= scalarFactor * 2.0f * dt;
-        particle.size+= 0.1 * dt;
+        particle.size+= 0.075 * dt;
         particle.pos-= particle.vel * dt;
 
-        if (particle.color.w < 0.4f && !died) {
+        // if it goes under this threshold of transparency, they have candidacy 
+        // to be recycled
+        if (particle.color.w <= 0.25f && !died) {
           particle.isDead= true;
           died= true;
         }
