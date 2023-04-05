@@ -49,7 +49,24 @@ particles/build $ ../bin/explosion
 
 ## Demo of basic features
 
-TODO: Document the main demos your viewer (shaders + models)
+### Star Trail
+
+![star-trail](https://user-images.githubusercontent.com/72237791/229005716-3acdfe63-bd31-4100-ac3f-6365e650cf5d.gif)
+
+
+
+### Explosion
+
+![explosions](https://user-images.githubusercontent.com/72237791/229006284-f07c0072-e8a2-4f70-9899-6b7d02e8039d.gif)
+
+
+
+### Billboard One-Axis Rotation
+
+![billboard](https://user-images.githubusercontent.com/72237791/229004846-0c700c1c-7cc5-453a-ba1a-eab054a7a7d3.gif)
+
+
+
 
 ## Unique features 
 
