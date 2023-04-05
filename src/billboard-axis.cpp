@@ -36,7 +36,7 @@ public:
     Image img;
     img.load("../textures/tree.png", true);
     renderer.loadTexture("tree", img, 0);
-    // TODO: Use the width and the height of the image to scale the billboard
+    ratio= float(img.width()) / img.height();
 
     renderer.loadTexture("grass", "../textures/grass.png", 0);
     renderer.blendMode(agl::BLEND);
@@ -100,7 +100,7 @@ public:
     float thetaY= atan2(n.x, n.z);
     renderer.rotate(thetaY, vec3(0, 1, 0));
 
-    renderer.scale(vec3(0.60, 1, 1)); // scale the tree to not look stretched
+    renderer.scale(vec3(ratio, 1, 1)); // scale the tree to not look stretched
 
     renderer.translate(vec3(-0.5, -0.5, 0)); // translate to the middle
 
@@ -116,6 +116,7 @@ protected:
   vec3 eyePos = vec3(0, 0, 2);
   vec3 lookPos = vec3(0, 0, 0);
   vec3 up = vec3(0, 1, 0);
+  float ratio= 1;
 
   float elevation= 0;
   float azimuth= 0;
