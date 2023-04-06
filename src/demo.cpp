@@ -7,16 +7,22 @@ using namespace std;
 using namespace glm;
 using namespace agl;
 
+/**
+ * This program impelements a velocity flow field using
+ * Perlin noise and creates particles to adhere to the flow field
+ * 
+ * David Dinh
+ * 
+ * References: https://cs.nyu.edu/~perlin/noise/
+ * 
+*/
+
 struct Particle {
   glm::vec3 pos;
   glm::vec3 vel;
   glm::vec4 color;
   float size;
   float rot;
-  float startTime;
-  float freq; // frequency of particle circular motion
-  float amp; // amplitude of motion
-  float angleOffset; // angular offset
 };
 
 enum KEY {
@@ -164,6 +170,10 @@ class FlowField {
       int y= p.y - minPoint.y;
       int z= p.z - minPoint.z;
 
+      //x= clamp(x, 0, dim.x - 1);
+      //y= clamp(y, 0, dim.y - 1);
+      //z= clamp(z, 0, dim.z - 1);
+
       return velocityField[z * dim.x * dim.y + y * dim.x + x];
     }
 
@@ -188,13 +198,23 @@ public:
       "../shaders/simple-texture.fs");
 
     noise= Noise();
-    flowField= FlowField(noise, vec3(-20, -20, -20), vec3(20, 20, 20));
 
-    createSnowflake(5000);
+
+    // change these values to change the flowfield dimensions :)
+    flowFieldMinBound= vec3(-15, -15, -15);
+    flowFieldMaxBound= vec3(15, 15, 15);
+
+    flowFieldDimensions= flowFieldMaxBound - flowFieldMinBound;
+
+    eyePos= vec3(flowFieldMaxBound.x + 10, 0, 0);
+    lookPos= vec3(0);
+
+    flowField= FlowField(noise, flowFieldMinBound, flowFieldMaxBound);
+
+    createConfetti(5000);
     renderer.setDepthTest(false);
     renderer.blendMode(agl::ADD);
     
-    renderer.loadTexture("snow", "../textures/snow.jpg", 0);
     renderer.blendMode(agl::BLEND);
   }
 
@@ -202,52 +222,50 @@ public:
     return rand() / float(RAND_MAX) * (upperBound - lowerBound) + lowerBound;
   }
 
-  // todo create clouds
-  // todo create fire with logs
-
-  void createSnowflake(int size)
+  void createConfetti(int size)
   {
     renderer.loadTexture("particle", "../textures/particle.png", 0);
     for (int i = 0; i < size; i++)
     {
       Particle particle;
-      particle.color = vec4(randomUnitCube(), 1);
-      particle.size = randBound(0.075, 0.15f);
+      particle.color = vec4(1, 1, 1, 1);
+      particle.size = randBound(0.15f, 0.25f);
       particle.rot = 0;
       particle.pos = vec3(randBound(-10, 10), randBound(-10, 10), randBound(-10, 10));
       particle.vel = flowField.getVel(particle.pos);
-      //particle.freq= randBound(0.25, 1);
-      //particle.amp= randBound(1, 2);
-      //particle.angleOffset= randBound(-M_PI, M_PI);
       mParticles.push_back(particle);
 
     }
   }
 
-  void resetSnowflake(Particle& particle) {
+  void resetConfetti(Particle& particle) {
     particle.pos = vec3(randBound(-10, 10), randBound(-10, 10), randBound(-10, 10));
     particle.vel = flowField.getVel(particle.pos);
-    //particle.freq= randBound(0.25, 1);
-    //particle.amp= randBound(1, 2);
-    //particle.angleOffset= randBound(-M_PI, M_PI);
   }
 
-  void updateSnowflake(float dt, float elapsedTime)
+  void updateConfetti(float dt, float elapsedTime)
   {
     for (int i = 0; i < mParticles.size(); i++)
     {
       Particle particle = mParticles[i];
       particle.vel = flowField.getVel(particle.pos);
-      //particle.vel= vec3(cos(particle.freq * elapsedTime + particle.angleOffset), particle.vel.y, -sin(particle.freq * elapsedTime + particle.angleOffset));
-      particle.pos += particle.vel * dt;
-      if (particle.pos.x <= -15 || particle.pos.x >= 15) resetSnowflake(particle);
-      if (particle.pos.y <= -15 || particle.pos.y >= 15) resetSnowflake(particle);
-      if (particle.pos.z <= -15 || particle.pos.z >= 15) resetSnowflake(particle);
+      particle.pos += particle.vel * 2.0f * dt;
+
+
+      // set the color to be the ratio of where it is in relation to the bounding box
+      particle.color= vec4((particle.pos.x - flowFieldMinBound.x) / flowFieldDimensions.x, 
+        (particle.pos.y - flowFieldMinBound.y) / flowFieldDimensions.y, 
+        (particle.pos.z - flowFieldMinBound.z) / flowFieldDimensions.z, 1);
+
+      
+      if (particle.pos.x <= flowFieldMinBound.x || particle.pos.x >= flowFieldMaxBound.x) resetConfetti(particle);
+      if (particle.pos.y <= flowFieldMinBound.y || particle.pos.y >= flowFieldMaxBound.y) resetConfetti(particle);
+      if (particle.pos.z <= flowFieldMinBound.z || particle.pos.z >= flowFieldMaxBound.z) resetConfetti(particle);
       mParticles[i] = particle;
     }
   }
 
-  void drawSnowflake()
+  void drawConfetti()
   {
     vec3 cameraPos = renderer.cameraPosition();
 
@@ -275,14 +293,15 @@ public:
   }
 
   void mouseMotion(int x, int y, int dx, int dy) {
+    if (keyIsDown(GLFW_KEY_LEFT_CONTROL)) {
+      // we're subtracting because it's opposite to the eyePos
+      azimuth-= (float)dx * 0.01f;
+      elevation-= (float)dy * 0.01f;
 
-    // we're subtracting because it's opposite to the eyePos
-    azimuth-= (float)dx * 0.01f;
-    elevation-= (float)dy * 0.01f;
-
-    // clamp between (-pi/2, pi/2), don't want the bounds since it might lead to weird rotation
-    elevation= std::max(elevation, (float) (-M_PI/2) + 0.00001f);
-    elevation= std::min(elevation, (float) (M_PI/2)  - 0.00001f);
+      // clamp between (-pi/2, pi/2), don't want the bounds since it might lead to weird rotation
+      elevation= std::max(elevation, (float) (-M_PI/2) + 0.00001f);
+      elevation= std::min(elevation, (float) (M_PI/2)  - 0.00001f);
+    }
   }
 
   void mouseDown(int button, int mods) {
@@ -311,6 +330,14 @@ public:
     if (key == GLFW_KEY_D) {
       WASD_KEY_HELD[D_KEY]= false;
     }
+    
+    if (key == GLFW_KEY_SPACE) {
+      eyePos = vec3(flowFieldMaxBound.x + 10, 0, 0);
+      lookPos = vec3(0, 0, 0);
+      elevation= 0;
+      azimuth= 3*M_PI/2;
+
+    }
   }
 
   void keyDown(int key, int mods) {
@@ -329,6 +356,7 @@ public:
     if (key == GLFW_KEY_D) {
       WASD_KEY_HELD[D_KEY]= true;
     }
+
   }
 
   void updatePlayerPosition() {
@@ -356,15 +384,18 @@ public:
   }
 
   void draw() {
+    glfwSetInputMode(window(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     renderer.beginShader("sprite");
 
     float aspect = ((float)width()) / height();
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);
-
     updateLookPos();
+
 
     renderer.lookAt(eyePos, lookPos, up);
 
+    // this keep starck of the axies of the view matrix,
+    // to allow camera movement
     mat4 VM= renderer.viewMatrix();
     eyeXAxis= vec3(VM[0][0], VM[1][0], VM[2][0]);
     eyeYAxis= vec3(VM[0][1], VM[1][1], VM[2][1]);
@@ -372,25 +403,16 @@ public:
 
     updatePlayerPosition();
 
-    updateSnowflake(dt(), elapsedTime());
-    drawSnowflake();
+    updateConfetti(dt(), elapsedTime());
+    drawConfetti();
     renderer.endShader();
 
-    renderer.beginShader("simple-texture");
-    // draw plane
-    renderer.texture("image", "snow");
-    renderer.push();
-    renderer.translate(vec3(0.0, -1, 0));
-    renderer.scale(vec3(30.0f, 1, 30.0f));
-    //renderer.plane();
-    renderer.pop();
-    renderer.endShader();
   }
 
 protected:
 
-  vec3 eyePos = vec3(0, 2, 0);
-  vec3 lookPos = vec3(0, 2, 1);
+  vec3 eyePos;
+  vec3 lookPos;
   vec3 up = vec3(0, 1, 0);
 
   float stepSize= 0.1;
@@ -405,14 +427,13 @@ protected:
   Noise noise;
   vec3 flowFieldMinBound;
   vec3 flowFieldMaxBound;
+  vec3 flowFieldDimensions;
 
-  
-  vec3 particleMinBound;
-  vec3 particleMaxBound;
+
 
 
   float elevation= 0;
-  float azimuth= 0;
+  float azimuth= 3*M_PI/2;
   const float LOOK_RADIUS= 1;
 
   std::vector<Particle> mParticles;
@@ -421,6 +442,7 @@ protected:
 int main(int argc, char** argv)
 {
   Viewer viewer;
+
   viewer.run();
   return 0;
 }
