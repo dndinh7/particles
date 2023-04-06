@@ -153,7 +153,7 @@ class FlowField {
           for (int z= minPoint.z; z < maxPoint.z; z++) {
             double noise= n.noise(x * scale, y * scale, z * scale); // 0 to 1
             double angle= noise * 2 * M_PI; // then we map it to an angle
-            vec3 vel= vec3(cos(angle), sin(angle), noise);
+            vec3 vel= vec3(cos(angle), sin(angle), angle);
 
             int xIdx= x - minPoint.x;
             int yIdx= y - minPoint.y;
