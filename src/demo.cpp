@@ -9,7 +9,18 @@ using namespace agl;
 
 /**
  * This program impelements a velocity flow field using
- * Perlin noise and creates particles to adhere to the flow field
+ * Perlin noise and creates particles to adhere to the velocity
+ * field.
+ * 
+ * There is also a flythrough camera:
+ * Use WASD to move around
+ * Hold CTRL + Move Mouse to move the camera around
+ * Press space to reset to the original position
+ * 
+ * Extra Wave Effects
+ * Press X to make the particles 'wave' in the x-dir
+ * Press Y to make the particles 'wave' in the y-dir
+ * Press Z to make the particles 'wave' in the z-dir
  * 
  * David Dinh
  * 
@@ -29,10 +40,12 @@ enum KEY {
   W_KEY, A_KEY, S_KEY, D_KEY
 };
 
+// clamp function
 double clamp(double value, double low, double high) {
   return std::max(std::min(value, high), low);
 }
 
+// noise class which implements perlin noise
 class Noise {
   public:
 
@@ -130,6 +143,7 @@ class Noise {
 
 constexpr int Noise::permutation[];
 
+
 class FlowField {
   public:
     FlowField() {
@@ -137,7 +151,7 @@ class FlowField {
     }
 
     // inits the flowfield based on the noise factor
-    FlowField(Noise n, vec3 minPoint, vec3 maxPoint) {
+    FlowField(Noise n, vec3 minPoint, vec3 maxPoint, vec3 offset) {
       this->minPoint= minPoint;
       this->maxPoint= maxPoint;
 
@@ -151,9 +165,11 @@ class FlowField {
       for (int x= minPoint.x; x < maxPoint.x; x++) {
         for (int y= minPoint.y; y < maxPoint.y; y++) {
           for (int z= minPoint.z; z < maxPoint.z; z++) {
-            double noise= n.noise(x * scale, y * scale, z * scale); // 0 to 1
-            double angle= noise * 2 * M_PI; // then we map it to an angle
-            vec3 vel= vec3(cos(angle), sin(angle), angle);
+            double noise= n.noise(x * scale + offset.x * 0.33, 
+                                  y * scale + offset.y * 0.33, 
+                                  z * scale + offset.z * 0.33); // 0 to 1
+            double angle= noise * 2 * M_PI + M_PI/2; // then we map it to an angle
+            vec3 vel= vec3(cos(angle), sin(angle), noise);
 
             int xIdx= x - minPoint.x;
             int yIdx= y - minPoint.y;
@@ -165,14 +181,17 @@ class FlowField {
       }
     }
 
+    // gets the velocity of the field at (p.x, p.y, p.z)
     vec3 getVel(vec3 p) {
-      int x= p.x - minPoint.x;
-      int y= p.y - minPoint.y;
-      int z= p.z - minPoint.z;
+      int x= floor(p.x - minPoint.x);
+      int y= floor(p.y - minPoint.y);
+      int z= floor(p.z - minPoint.z);
 
-      //x= clamp(x, 0, dim.x - 1);
-      //y= clamp(y, 0, dim.y - 1);
-      //z= clamp(z, 0, dim.z - 1);
+
+      x= clamp(x, 0, dim.x - 1);
+      y= clamp(y, 0, dim.y - 1);
+      z= clamp(z, 0, dim.z - 1);
+
 
       return velocityField[z * dim.x * dim.y + y * dim.x + x];
     }
@@ -209,41 +228,50 @@ public:
     eyePos= vec3(flowFieldMaxBound.x + 10, 0, 0);
     lookPos= vec3(0);
 
-    flowField= FlowField(noise, flowFieldMinBound, flowFieldMaxBound);
+    flowField= FlowField(noise, flowFieldMinBound, flowFieldMaxBound, flowFieldOffset);
 
     createConfetti(5000);
-    renderer.setDepthTest(false);
-    renderer.blendMode(agl::ADD);
-    
+    renderer.setDepthTest(false);    
     renderer.blendMode(agl::BLEND);
   }
 
+  // gives a float between lowerBound and upperBound inclusive
   float randBound(float lowerBound, float upperBound) {
     return rand() / float(RAND_MAX) * (upperBound - lowerBound) + lowerBound;
   }
 
+  // randomly instantiates size amount of confetti
   void createConfetti(int size)
   {
     renderer.loadTexture("particle", "../textures/particle.png", 0);
     for (int i = 0; i < size; i++)
     {
       Particle particle;
-      particle.color = vec4(1, 1, 1, 1);
-      particle.size = randBound(0.15f, 0.25f);
+      particle.color = vec4(0, 0, 0, 0);
+      particle.size = randBound(0.15f, 0.35f);
       particle.rot = 0;
-      particle.pos = vec3(randBound(-10, 10), randBound(-10, 10), randBound(-10, 10));
+      particle.pos = vec3(randBound(flowFieldMinBound.x, flowFieldMaxBound.x), 
+        randBound(flowFieldMinBound.y, flowFieldMaxBound.y), 
+        randBound(flowFieldMinBound.z, flowFieldMaxBound.z));
       particle.vel = flowField.getVel(particle.pos);
       mParticles.push_back(particle);
 
     }
   }
 
+  // resets the particle if it goes outside the bounding box
   void resetConfetti(Particle& particle) {
-    particle.pos = vec3(randBound(-10, 10), randBound(-10, 10), randBound(-10, 10));
+    particle.pos = vec3(randBound(flowFieldMinBound.x, flowFieldMaxBound.x), 
+      randBound(flowFieldMinBound.y, flowFieldMaxBound.y), 
+      randBound(flowFieldMinBound.z, flowFieldMaxBound.z));
+    particle.color= vec4((particle.pos.x - flowFieldMinBound.x) / flowFieldDimensions.x, 
+      (particle.pos.y - flowFieldMinBound.y) / flowFieldDimensions.y, 
+      (particle.pos.z - flowFieldMinBound.z) / flowFieldDimensions.z, 1);
     particle.vel = flowField.getVel(particle.pos);
   }
 
-  void updateConfetti(float dt, float elapsedTime)
+  // updates the confetti based ont he flow field
+  void updateConfetti(float dt)
   {
     for (int i = 0; i < mParticles.size(); i++)
     {
@@ -257,14 +285,19 @@ public:
         (particle.pos.y - flowFieldMinBound.y) / flowFieldDimensions.y, 
         (particle.pos.z - flowFieldMinBound.z) / flowFieldDimensions.z, 1);
 
+      // if it goes out of bounds, we reset
+      if (particle.pos.x <= flowFieldMinBound.x || 
+          particle.pos.x >= flowFieldMaxBound.x) resetConfetti(particle);
+      if (particle.pos.y <= flowFieldMinBound.y || 
+          particle.pos.y >= flowFieldMaxBound.y) resetConfetti(particle);
+      if (particle.pos.z <= flowFieldMinBound.z || 
+          particle.pos.z >= flowFieldMaxBound.z) resetConfetti(particle);
       
-      if (particle.pos.x <= flowFieldMinBound.x || particle.pos.x >= flowFieldMaxBound.x) resetConfetti(particle);
-      if (particle.pos.y <= flowFieldMinBound.y || particle.pos.y >= flowFieldMaxBound.y) resetConfetti(particle);
-      if (particle.pos.z <= flowFieldMinBound.z || particle.pos.z >= flowFieldMaxBound.z) resetConfetti(particle);
       mParticles[i] = particle;
     }
   }
 
+  // draws the particle
   void drawConfetti()
   {
     vec3 cameraPos = renderer.cameraPosition();
@@ -283,7 +316,6 @@ public:
       }
     }
 
-    // draw
     renderer.texture("image", "particle");
     for (int i = 0; i < mParticles.size(); i++)
     {
@@ -292,6 +324,7 @@ public:
     }
   }
 
+  // user holds control and moves mouse to move the camera
   void mouseMotion(int x, int y, int dx, int dy) {
     if (keyIsDown(GLFW_KEY_LEFT_CONTROL)) {
       // we're subtracting because it's opposite to the eyePos
@@ -314,6 +347,7 @@ public:
 
   }
 
+  // handles WASD release
   void keyUp(int key, int mods) {
     if (key == GLFW_KEY_W) {
       WASD_KEY_HELD[W_KEY]= false;
@@ -340,6 +374,7 @@ public:
     }
   }
 
+  // handles WASD press/hold
   void keyDown(int key, int mods) {
     if (key == GLFW_KEY_W) {
       WASD_KEY_HELD[W_KEY]= true;
@@ -357,8 +392,20 @@ public:
       WASD_KEY_HELD[D_KEY]= true;
     }
 
+    if (key == GLFW_KEY_X) {
+      flowFieldXYZWave[0]= !flowFieldXYZWave[0];
+    }
+
+    if (key == GLFW_KEY_Y) {
+      flowFieldXYZWave[1]= !flowFieldXYZWave[1];
+    }
+    
+    if (key == GLFW_KEY_Z) {
+      flowFieldXYZWave[2]= !flowFieldXYZWave[2];
+    }
   }
 
+  // updates the eyePos when the user presses WASD
   void updatePlayerPosition() {
     if (WASD_KEY_HELD[W_KEY]) {
       eyePos= eyePos - stepSize * eyeZAxis;
@@ -377,6 +424,25 @@ public:
     }
   }
 
+  // updates the flowfield based parameters
+  void updateFlowField(float dt) {
+    if (flowFieldXYZWave[0]) {
+      flowFieldOffset.x+= dt;
+    }
+    if (flowFieldXYZWave[1]) {
+      flowFieldOffset.y+= dt;
+    }
+    if (flowFieldXYZWave[2]) {
+      flowFieldOffset.z+= dt;
+    }
+
+
+    flowField= FlowField(noise, flowFieldMinBound, flowFieldMaxBound, flowFieldOffset);
+
+  }
+
+
+  // updates the lookPos when the user changes their mouse position
   void updateLookPos() {
     lookPos.x= LOOK_RADIUS * sin(azimuth) * cos(elevation) + eyePos.x;
     lookPos.y= LOOK_RADIUS * sin(elevation) + eyePos.y;
@@ -391,7 +457,6 @@ public:
     renderer.perspective(glm::radians(60.0f), aspect, 0.1f, 50.0f);
     updateLookPos();
 
-
     renderer.lookAt(eyePos, lookPos, up);
 
     // this keep starck of the axies of the view matrix,
@@ -403,7 +468,11 @@ public:
 
     updatePlayerPosition();
 
-    updateConfetti(dt(), elapsedTime());
+
+    updateFlowField(dt());
+
+
+    updateConfetti(dt());
     drawConfetti();
     renderer.endShader();
 
@@ -429,6 +498,9 @@ protected:
   vec3 flowFieldMaxBound;
   vec3 flowFieldDimensions;
 
+  vec3 flowFieldOffset= vec3(0);
+
+  bool flowFieldXYZWave[3]= {false, false, false};
 
 
 
