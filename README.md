@@ -2,7 +2,8 @@
 
 Implements particle demos
 
-TODO: Add a representative image for your project here
+https://user-images.githubusercontent.com/72237791/230537535-48745729-8680-4223-8499-d2bcdd9d7255.mp4
+
 
 ## How to build
 
@@ -67,8 +68,18 @@ particles/build $ ../bin/explosion
 
 
 
-
 ## Unique features 
 
-TODO: Show the unique features you made
+The demo shows particles traversing a flow field that was created using Perlin noise. The color of the particles is based
+on their position on the grid, creating a gradient. The user can also move the player/camera using WASD and look around
+holding CTRL and using the mouse.
+
+As well, the user can press 'X', 'Y', or 'Z' to make the flow field 'wave' by offsetting noise parameters.
+
+![elongated](https://user-images.githubusercontent.com/72237791/230537623-a146549a-876c-4327-8ab3-0fa76f181b02.gif)
+
+
+![normal](https://user-images.githubusercontent.com/72237791/230537808-12decc09-0053-4b9b-b226-f61d1366efb7.gif)
+
+
 
