@@ -1,6 +1,6 @@
 # particles
 
-Implements particle demos
+## Implements particle demos (GIFs at the end of the page are better quality)
 
 https://user-images.githubusercontent.com/72237791/230537535-48745729-8680-4223-8499-d2bcdd9d7255.mp4
 
